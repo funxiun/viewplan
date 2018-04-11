@@ -23,14 +23,14 @@ stars.
 
 ~~~
 : python viewplan.py --city Boston --start "in 15 minutes" 
-        --planets --dsos --dsolimit 4 --stars --starlimit 1.8
+        --planets --messier --dsolimit 4 --stars --starlimit 1.8
 
 Your viewing plan:
  viewing from 2015/6/7 05:45:26 (UTC)
  viewing from Boston
  including planets
  including interesting stars down to magnitude 1.8
- including nebulae and other DSOs down to magnitude 4.0
+ including nebulae and other DSOs from the Messier catalogue down to magnitude 4.0
  limiting targets to altitudes between 20 and 70 degrees elevation
 
                 Name        Azimuth       Altitude    Mag   Eyepc           Description 
