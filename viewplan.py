@@ -59,9 +59,10 @@ def read_database( filename ):
     # Read a set of bodies from an EDB file. 
     bodies = []
     desc = {}   
-    
+    dbpath = "databases/"
+ 
     # Read the file.
-    with open(filename) as f:
+    with open(dbpath + filename) as f:
         # Look at each line of the file
         for line in f:
             line=line.strip()
@@ -90,9 +91,14 @@ def read_database( filename ):
         
     return bodies
 
-def dso_candidates():    
+def messier_candidates():    
     # Read the Messier catalog for DSO candidate targets.
     return read_database( "Messier.edb" )
+
+def ngc_candidates():
+    # Read the Messier catalog for DSO candidate targets.
+    return read_database( "NGC.edb" )
+
 
 def star_candidates():                                                                           
     # Read the star catalog, but reject those whose description is simply 
@@ -279,42 +285,47 @@ def present_plan( options, targets ):
     
     # Now redo each body over the time span of the viewing session.
     count = len(located)
+
+    if count > 0:
              
-    if options.end_time > options.start_time:
-        session_length = options.end_time-options.start_time
-        interval = session_length / count
-    else:
-        # If end time wasn't given, allow 5 minutes per target.
-        interval = (5.0/1440.0)
+       if options.end_time > options.start_time:
+           session_length = options.end_time-options.start_time
+           interval = session_length / count
+       else:
+           # If end time wasn't given, allow 5 minutes per target.
+           interval = (5.0/1440.0)
     
     # When converting from localtime to GMT and back in the Pyephem date 
     # format, we can incur a rounding error which makes a 9pm start time
     # show as 8:59 in the plan. We add in a little fudge factor here and
     # present only hours and minutes in the plan to keep things looking 
     # good.
-    t = date(options.start_time  + 0.0002)
+       t = date(options.start_time  + 0.0002)
                                  
-    print u"%5s  %20s  %13s  %13s  %5s  %6s  %20s "%("Time", "Name","Azimuth","Altitude","Mag","Eyepc","Description") 
-    print u"%5s  %20s  %13s  %13s  %5s  %6s  %20s "%("-"*5,"-"*20,"-"*13,"-"*13,"-"*5,"-"*6,"-"*20) 
+       print u"%5s  %20s  %13s  %13s  %5s  %6s  %20s "%("Time", "Name","Azimuth","Altitude","Mag","Eyepc","Description") 
+       print u"%5s  %20s  %13s  %13s  %5s  %6s  %20s "%("-"*5,"-"*20,"-"*13,"-"*13,"-"*5,"-"*6,"-"*20) 
 
-    for (x,y),desc,body in located:
-        observer.date = t
-        body.compute(observer)
-        commonName = body.name.split('|')[0]
+       for (x,y),desc,body in located:
+           observer.date = t
+           body.compute(observer)
+           commonName = body.name.split('|')[0]
         
-        if "star" in desc:
-            eyepiece = " "
-        else:        
-            eyepiece = eyepiece_for_size(body.size)        
+           if "star" in desc:
+               eyepiece = " "
+           else:        
+               eyepiece = eyepiece_for_size(body.size)        
          
-        azi = convert_dms(body.az)
-        alt = convert_dms(body.alt) 
+           azi = convert_dms(body.az)
+           alt = convert_dms(body.alt) 
         
-        m = re.search( r"(\d\d:\d\d:\d\d)", "%s"%(localtime(t)) )
-        time_rep = m.group(0)[:-3]
-        print u"%5s %20s  %13s  %13s  %5.1f  %6s  %20s"%(time_rep,commonName,azi,alt,body.mag,eyepiece,desc)
+           m = re.search( r"(\d\d:\d\d:\d\d)", "%s"%(localtime(t)) )
+           time_rep = m.group(0)[:-3]
+           print u"%5s %20s  %13s  %13s  %5.1f  %6s  %20s"%(time_rep,commonName,azi,alt,body.mag,eyepiece,desc)
         
-        t = date(t+interval)
+           t = date(t+interval)
+
+    else:
+        print " No objects found."
                        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -330,7 +341,8 @@ if __name__ == "__main__":
     # Control categories of viewing targets.
     parser.add_argument( '--stars', help="include interesting stars in plan", action='store_true',default=False )
     parser.add_argument( '--planets', help="include planets and the moon in plan", action='store_true',default=False )
-    parser.add_argument( '--dsos', help="include nebulae and other DSOs in plan", action='store_true',default=False )
+    parser.add_argument( '--messier', help="include nebulae and other DSOs from the Messier catalogue in plan", action='store_true',default=False )
+    parser.add_argument( '--ngc', help="include nebulae and other DSOs from the NGC catalogue in plan", action='store_true',default=False )
     # Avoid listing many very dim targets. 
     parser.add_argument( '--starlimit', help="magnitude limit for stars", type=float,default=2.5 )
     parser.add_argument( '--dsolimit', help="magnitude limit for DSOs", type=float,default=5 )                  
@@ -343,9 +355,10 @@ if __name__ == "__main__":
         
     options = parser.parse_args( sys.argv[1:] )  
     
-    if not (options.stars or options.planets or options.dsos):
+    if not (options.stars or options.planets or options.messier or options.ngc):
         options.planets = True
-        options.dsos = True        
+        options.messier = True 
+        options.ngc     = True       
 
     cal = parsedatetime.Calendar()
     
@@ -371,8 +384,11 @@ if __name__ == "__main__":
         print " including planets"
     if options.stars:
         print " including interesting stars down to magnitude %.1f"%(options.starlimit)   
-    if options.dsos:
-        print " including nebulae and other DSOs down to magnitude %.1f"%(options.dsolimit)   
+    if options.messier:
+        print " including nebulae and other DSOs from the Messier catalogue down to magnitude %.1f"%(options.dsolimit)   
+    if options.ngc:
+        print " including nebulae and other DSOs from the NGC catalogue down to magnitude %.1f"%(options.dsolimit)
+
    
     print " limiting targets to altitudes between %d and %d degrees elevation"%(options.minalt,options.maxalt)
     
@@ -391,19 +407,26 @@ if __name__ == "__main__":
             # Keep the stars below the magnitude limit            
             if body.mag <= options.starlimit:
                 targets.append( (desc,body) )
-    # Did we request DSOs?
-    if options.dsos:
-        # Iterate over the DSO list
-        for desc,body in dso_candidates():
+    # Did we request DSOs from the Messier catalogue?
+    if options.messier:
+        # Iterate over the Messier DSO list
+        for desc,body in messier_candidates():
             body.compute(observer)             
             # Keep the DSOs below the magnitude limit            
             if body.mag <= options.dsolimit: 
-                targets.append( (desc,body) )                  
+                targets.append( (desc,body) ) 
+    # Did we request DSOs from the Messier catalogue?
+    if options.ngc:
+        # Iterate over the NGC DSO list
+        for desc,body in ngc_candidates():
+            body.compute(observer)
+            # Keep the DSOs below the magnitude limit
+            if body.mag <= options.dsolimit:
+                targets.append( (desc,body) )
+                 
     # Did we request planets?
     if options.planets:
         # Assume all planets are bright and interesting
         targets.extend( planet_candidates() ) 
   
     present_plan(options,targets)
-        
-

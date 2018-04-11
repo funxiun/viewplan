@@ -55,7 +55,8 @@ usage: viewplan.py [-h]
                    [--start START]
                    [--stars]
                    [--planets]
-                   [--dsos]
+                   [--messier]
+                   [--ngc]
                    [--starlimit STARLIMIT]
                    [--dsolimit DSOLIMIT] 
                    [--minalt MINALT]
@@ -75,13 +76,23 @@ The viewing start time can be given in natural and relative language, e.g. `--st
 
 ##### Filter Options
 
-You can request that planets, "interesting" stars, and other deep space objects (DSOs) such as galaxies, nebulae and clusters be listed, using the `--planets`, `--stars`, and `--dsos` options. If none of those three options are provided, planets and DSOs will be listed. 
+You can request that planets, "interesting" stars, and other deep space objects (DSOs) such as galaxies, nebulae and clusters be listed, using the `--planets`, `--stars`, `--messier` and `--ngc` options. If none of those four options are provided, planets and DSOs from the Messier and NGC catalogue will be listed. 
 
 By default, stars below magnitude 2.5 and DSOs below magnitude 5 are filtered out. The limiting magnitudes can be set, for instance including dimmer stars with `--starlimit 3.5` or keeping only the brightest DSOs with `--dsolimit 4.5`. 
 
 Only targets whose altitude (elevation angle) are within a set range will be shown. This is handy if your local horizon is obscured by walls, trees, etc., or if your telescope mount isn't capable of elevating all the way to zenith. `--minalt 10` sets a floor 10 degrees above the horizon; `--maxalt 80` sets an upper limit of 80 degrees above the horizon. The defaults are 20 and 70 degrees. 
 
 ### Future Work
+
+* Add observable comets
+* Add observable asteroids
+* Add other Deep Sky catalogues (Caldwell, Abell etc.)
+* Moon phase (percentage luminated)
+* ISS overpass alert
+* Show only results from a specified azimuth range
+* Convert to Python 3.x
+
+From the original repository https://github.com/borogove/viewplan:
 
 * Add an option to display RA and declination instead of altitude and azimuth.
 * Add an option to display good candidate stars for alignment.
