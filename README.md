@@ -1,6 +1,6 @@
 ## Viewplan
 
-Viewplan is a Python script for generating telescope viewing plans for amateur astronomers. 
+Viewplan is a Python3 script for generating telescope viewing plans for amateur astronomers. 
 
 You specify the time and location for the viewing, and what sort of objects you're interested in; the program selects a list of viewable objects for the specified time and location, and generates a viewing plan with azimuth, altitude, and other information for each target. 
 
@@ -14,7 +14,7 @@ Viewplan requires the following third party Python packages:
 * [parsedatetime](https://github.com/bear/parsedatetime) - This provides the handy natural language time parsing on the command line. 
 * [urllib3](https://github.com/urllib3/urllib3) - Python HTTP library.
 
-Works on my machine with Python 2.7. 
+Works on my machine with Python 3.5.3. 
 
 ### Examples
 
@@ -49,6 +49,8 @@ Your viewing plan:
            NGC 6871   343°41'17.3"     0°12'11.8"    5.2     7mm          open cluster
            NGC 6633    31°57'56.8"   -26°33'19.7"    4.6     4mm          open cluster
 
+~~~ 
+
 
 ### Options
 
@@ -64,7 +66,7 @@ usage: viewplan.py [-h]
                    [--messier]
                    [--ngc]
                    [--comets]
-                   [--asteroids]
+                   [--planetoids]
                    [--starlimit STARLIMIT]
                    [--dsolimit DSOLIMIT] 
                    [--minalt MINALT]
@@ -84,7 +86,7 @@ The viewing start time can be given in natural and relative language, e.g. `--st
 
 ##### Filter Options
 
-You can request that planets, comets, asteroids, "interesting" stars, and other deep space objects (DSOs) such as galaxies, nebulae and clusters be listed, using the `--planets`, `--comets`, `--asteroids`, `--stars`, `--messier` and `--ngc` options. If none of those four options are provided, planets and DSOs from the Messier and NGC catalogue will be listed. 
+You can request that planets, comets, planetoids, "interesting" stars, and other deep space objects (DSOs) such as galaxies, nebulae and clusters be listed, using the `--planets`, `--comets`, `--planetoids`, `--stars`, `--messier` and `--ngc` options. If none of those six options are provided, planets and DSOs from the Messier catalogue will be listed. 
 
 By default, stars below magnitude 2.5 and DSOs below magnitude 5 are filtered out. The limiting magnitudes can be set, for instance including dimmer stars with `--starlimit 3.5` or keeping only the brightest DSOs with `--dsolimit 4.5`. 
 
@@ -92,7 +94,6 @@ Only targets whose altitude (elevation angle) are within a set range will be sho
 
 ### Future Work
 
-* Comets are identified as planetoids. Have to fix that.
 * Add other Deep Sky catalogues (Melotte, Caldwell, Abell etc.)
 * Moon phase (percentage luminated). Also rise, transit & set to be shown.
 * Display Civil, Nautical & Astromomical twilight
@@ -100,7 +101,6 @@ Only targets whose altitude (elevation angle) are within a set range will be sho
 * ISS overpass alert
 * Show only results from a specified azimuth range
 * CSV, EQ Tour output
-* Convert to Python 3.x
 
 From the original repository https://github.com/borogove/viewplan:
 

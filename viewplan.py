@@ -1,9 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*- 
-                          
+#!/usr/bin/env python3
+
 """
 Use the PyEphem package to develop a plan for an evening's stargazing.
-"""       
+"""
 
 import os
 import re
@@ -12,7 +11,7 @@ import math
 import time
 import argparse
 import itertools 
-from urllib import urlopen
+from urllib.request import urlopen
 import parsedatetime
 from ephem import *      
 
@@ -25,7 +24,7 @@ def describe_body( subfields ):
         return "planet"
     if subfields[0] == 'E':
         return "satellite"
-    if subfields[0] in 'ehp':
+    if subfields[0] in "ehp":
         return "planetoid"
         
     FIXED_BODY_MAP = {
@@ -51,7 +50,7 @@ def describe_body( subfields ):
         'V' : "variable star",
         'Y' : "supernova"     }            
         
-    if subfields[0] == 'f':
+    if subfields[0] == "f":
         return FIXED_BODY_MAP[subfields[1]]  
         
     return "?"    
@@ -60,9 +59,9 @@ def download_ephemerides ( ephem_url, filename ):
      # Download new ephemerides when the file does not exists or is older than 24 hours
      
      if not os.path.isfile(filename) or (os.path.getmtime(filename) < int(time.time())-(60*60*24)):	
-        print "Downloading from: " + ephem_url
+        print ("Downloading from: " + ephem_url)
         local_ephem_file = urlopen(ephem_url)
-        with open (filename,'w') as output:
+        with open (filename,'wb') as output:
           output.write(local_ephem_file.read())
 
 def read_database( filename ):
@@ -70,12 +69,14 @@ def read_database( filename ):
     bodies = []
     desc = {}   
  
-    # Read the file.
-    with open(filename) as f:
+    # Read the file. Forcing to read using encoding ISO-8859-1 
+    # The NGC catalogue needs this for instance.
+
+    with open(filename,encoding = "ISO-8859-1") as f:
         # Look at each line of the file
         for line in f:
             line=line.strip()
-        
+
             # Skip comments
             if line.startswith('#'):
                 continue    
@@ -90,8 +91,12 @@ def read_database( filename ):
             name = elements[0]
             # Extract the type fields
             subfields = elements[1].split('|') 
+
             # Map those to a description
-            desc = describe_body(subfields)  
+            if "Cmt" in filename:  # If Cmt is in the filename, body is a comet. Otherwise wrong identified as a planetoid
+               desc = "comet"
+            else:
+               desc = describe_body(subfields)  
             
             # Give the whole line to pyephem
             body = readdb(line)
@@ -103,24 +108,24 @@ def read_database( filename ):
 
 def messier_candidates():    
     # Read the Messier catalog for DSO candidate targets.
-    return read_database( "databases/Messier.edb" )
+    return read_database( "databases/messier.edb" )
 
 def ngc_candidates():
     # Read the NGC catalog for DSO candidate targets.
-    return read_database( "databases/NGC.edb" )
+    return read_database( "databases/ngc.edb" )
 
 def comet_candidates():
     # Read the comet catalog.
     return read_database ( "ephem/Soft03Cmt.txt" )
 
-def asteroid_candidates():
-    # Read the asteroid catalog.
+def planetoid_candidates():
+    # Read the planetoid catalog.
     return read_database ( "ephem/Soft03Bright.txt" )
 
 def star_candidates():                                                                           
     # Read the star catalog, but reject those whose description is simply 
     # "star" as opposed to "binary star", "variable star" etc.
-    return [(desc,body) for (desc,body) in read_database( "databases/SKY2k65.edb" ) if desc != "star"]
+    return [(desc,body) for (desc,body) in read_database( "databases/sky2k65.edb" ) if desc != "star"]
  
 def planet_candidates():    
     # Planets and Earth's moon are built into ephem, so just return those directly
@@ -161,7 +166,6 @@ def get_ephem_time(t):
     # to ephem time (days since noon 12/31/1899).
     K_EPHEM = 42160.34627314815
     K_UNIX = 1433621918.381372
-    
     return date( ((t - K_UNIX) / 86400.0) + K_EPHEM )
 
 def make_observer( options, t ):
@@ -217,6 +221,7 @@ def eyepiece_for_size( size ):
 # Traveling salesman should be factorial time, so limit 12 should take only ~12 
 # times as long as limit 11. Since I don't understand the dramatic difference
 # (cache blown?), I'll leave this at a conservative 10. 
+
 OPTIMIZATION_SUBDIVIDE_LIMIT = 10
 
 def path_length( candidate ): 
@@ -244,7 +249,8 @@ def optimize_order( located ):
 
     # Sort west-to-east to start; western targets will be first 
     # lost below the horizon.
-    located.sort( key=lambda ((x,y),d,b): x )
+#    located.sort( key=lambda ((x,y),d,b): x )
+    located.sort( key=lambda x_y_d_b: x_y_d_b[0][0] )
     
     # If the list is long, split it into two smaller lists 
     # and optimize each one separately.
@@ -325,8 +331,8 @@ def present_plan( options, targets ):
     # good.
        t = date(options.start_time  + 0.0002)
                                  
-       print u"%5s  %20s  %13s  %13s  %5s  %6s  %20s "%("Time", "Name","Azimuth","Altitude","Mag","Eyepc","Description") 
-       print u"%5s  %20s  %13s  %13s  %5s  %6s  %20s "%("-"*5,"-"*20,"-"*13,"-"*13,"-"*5,"-"*6,"-"*20) 
+       print (u"%5s  %25s  %13s  %13s  %5s  %6s  %20s "%("Time", "Name","Azimuth","Altitude","Mag","Eyepc","Description")) 
+       print (u"%5s  %25s  %13s  %13s  %5s  %6s  %20s "%("-"*5,"-"*25,"-"*13,"-"*13,"-"*5,"-"*6,"-"*20)) 
 
        for (x,y),desc,body in located:
            observer.date = t
@@ -343,12 +349,12 @@ def present_plan( options, targets ):
         
            m = re.search( r"(\d\d:\d\d:\d\d)", "%s"%(localtime(t)) )
            time_rep = m.group(0)[:-3]
-           print u"%5s %20s  %13s  %13s  %5.1f  %6s  %20s"%(time_rep,commonName,azi,alt,body.mag,eyepiece,desc)
+           print (u"%5s %25s  %13s  %13s  %5.1f  %6s  %20s"%(time_rep,commonName,azi,alt,body.mag,eyepiece,desc))
         
            t = date(t+interval)
 
     else:
-        print " No objects found."
+        print (" No objects found.")
                        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -358,19 +364,23 @@ if __name__ == "__main__":
     parser.add_argument( '--lat', help="latitude to observe from (degrees:minutes:seconds)", default="52:5:26.917" )
     parser.add_argument( '--lon', help="longitude to observe from (degrees:minutes:seconds, positive East) ", default="5:7:10.758"  )
     parser.add_argument( '--elevation', help="elevation to observe from (m)", default=13 )
+    
     # Specify a time window for the viewing plan, using natural language relative time specifications
     parser.add_argument( '--start', help="time to start the plan", default="in 1 hour" )
     parser.add_argument( '--end', help="time to end the plan", default="in 2 hours" )
+ 
     # Control categories of viewing targets.
     parser.add_argument( '--stars', help="include interesting stars in plan", action='store_true',default=False )
     parser.add_argument( '--planets', help="include planets and the moon in plan", action='store_true',default=False )
     parser.add_argument( '--messier', help="include nebulae and other DSOs from the Messier catalogue in plan", action='store_true',default=False )
     parser.add_argument( '--ngc', help="include nebulae and other DSOs from the NGC catalogue in plan", action='store_true',default=False )
     parser.add_argument( '--comets', help="include observable comets in plan", action='store_true',default=False )
-    parser.add_argument( '--asteroids', help="include observable asteroids in plan", action='store_true',default=False )
+    parser.add_argument( '--planetoids', help="include observable planetoids in plan", action='store_true',default=False )
+    
     # Avoid listing many very dim targets. 
     parser.add_argument( '--starlimit', help="magnitude limit for stars", type=float,default=2.5 )
-    parser.add_argument( '--dsolimit', help="magnitude limit for DSOs", type=float,default=5 )                  
+    parser.add_argument( '--dsolimit', help="magnitude limit for DSOs", type=float,default=5 )
+
     # Limit minimum and maximum elevation altitudes. Viewing sites with surrounding trees or walls 
     # restrict the minimum practical elevation, while scope mounts may limit the maximum elevation. 
     parser.add_argument( '--minalt', help="minimum observation altitude (degrees elevation)", default=20 )
@@ -386,13 +396,14 @@ if __name__ == "__main__":
 
     # Download latest comet data
     download_ephemerides ("https://minorplanetcenter.net/iau/Ephemerides/Comets/Soft03Cmt.txt", "ephem/Soft03Cmt.txt")	
-    # Download latest asteroid data
+    # Download latest planetoid data
     download_ephemerides ("https://www.minorplanetcenter.net/iau/Ephemerides/Bright/2017/Soft03Bright.txt", "ephem/Soft03Bright.txt")
-    
-    if not (options.stars or options.planets or options.messier or options.ngc):
-        options.planets = True
-        options.messier = False
-        options.ngc     = False       
+
+    # If no arguments are given, show some default output
+    if not len(sys.argv) > 1:
+        options.planets = True 
+        options.messier = True
+
 
     cal = parsedatetime.Calendar()
     
@@ -407,29 +418,29 @@ if __name__ == "__main__":
         # make it sane later. 
         options.end_time = options.start_time
         
-    print "Your viewing plan:"
+    print ("Your viewing plan:")
     #print " viewing from %s until %s (UTC)"%(options.start_time,options.end_time)
-    print " viewing from %s (UTC)"%(options.start_time)
+    print (" viewing from %s (UTC)"%(options.start_time))
     if options.city is not None:        
-        print " viewing from %s"%(options.city)
+        print (" viewing from %s"%(options.city))
     else:
-        print " viewing from latitude %s, longitude %s"%(convert_dms(options.lat),convert_dms(options.lon))
+        print (" viewing from latitude %s, longitude %s"%(convert_dms(options.lat),convert_dms(options.lon)))
     if options.planets:
-        print " including planets"
+        print (" including planets")
     if options.stars:
-        print " including interesting stars down to magnitude %.1f"%(options.starlimit)   
+        print (" including interesting stars down to magnitude %.1f"%(options.starlimit))
     if options.messier:
-        print " including nebulae and other DSOs from the Messier catalogue down to magnitude %.1f"%(options.dsolimit)   
+        print (" including nebulae and other DSOs from the Messier catalogue down to magnitude %.1f"%(options.dsolimit))
     if options.ngc:
-        print " including nebulae and other DSOs from the NGC catalogue down to magnitude %.1f"%(options.dsolimit)
+        print (" including nebulae and other DSOs from the NGC catalogue down to magnitude %.1f"%(options.dsolimit))
     if options.comets:
-        print " including observable comets down to magnitude %.1f"%(options.dsolimit)
-    if options.asteroids:
-        print " including observable asteroids down to magnitude %.1f"%(options.dsolimit)  
+        print (" including observable comets down to magnitude %.1f"%(options.dsolimit))
+    if options.planetoids:
+        print (" including observable planetoids down to magnitude %.1f"%(options.dsolimit))  
         
-    print " limiting targets to altitudes between %d and %d degrees elevation"%(options.minalt,options.maxalt)
+    print (" limiting targets to altitudes between %d and %d degrees elevation"%(options.minalt,options.maxalt))
     
-    print
+    print ()
              
     # Start assembling our target list.
     targets = []
@@ -445,6 +456,7 @@ if __name__ == "__main__":
             # Keep the stars below the magnitude limit            
             if body.mag <= options.starlimit:
                 targets.append( (desc,body) )
+
     # Did we request DSOs from the Messier catalogue?
     if options.messier:
         # Iterate over the Messier DSO list
@@ -453,6 +465,7 @@ if __name__ == "__main__":
             # Keep the DSOs below the magnitude limit            
             if body.mag <= options.dsolimit: 
                 targets.append( (desc,body) ) 
+
     # Did we request DSOs from the NGC catalogue?
     if options.ngc:
         # Iterate over the NGC DSO list
@@ -461,6 +474,7 @@ if __name__ == "__main__":
             # Keep the DSOs below the magnitude limit
             if body.mag <= options.dsolimit:
                 targets.append( (desc,body) )
+
     # Did we request observable comets?
     if options.comets:
         # Iterate over the comet hoe heet ut list
@@ -469,14 +483,16 @@ if __name__ == "__main__":
             # Keep the comets below the magnitude limit
             if body.mag <= options.dsolimit:
                 targets.append( (desc,body) )
-    # Did we request observable asteroids?
-    if options.asteroids:
-        # Iterate over the asteroid hoe heet ut list
-        for desc,body in asteroid_candidates():
+
+    # Did we request observable planetoids?
+    if options.planetoids:
+        # Iterate over the planetoid list
+        for desc,body in planetoid_candidates():
             body.compute(observer)
-            # Keep the asteroid below the magnitude limit
+            # Keep the planetoid below the magnitude limit
             if body.mag <= options.dsolimit:
                 targets.append( (desc,body) )
+
     # Did we request planets?
     if options.planets:
         # Assume all planets are bright and interesting
